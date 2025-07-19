@@ -1,189 +1,239 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import profileIcon from '../assets/profile-icon.png';
 import '../styles/HomePage.css';
 
 const HomePage = () => {
   const [username, setUsername] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [books, setBooks] = useState([]); // All books from the API
-  const [filteredBooks, setFilteredBooks] = useState([]); // Filtered books based on search
-  const [loading, setLoading] = useState(false); // Loading state for API request
-  const [error, setError] = useState(null); // For error handling
+  const [books, setBooks] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
   const navigate = useNavigate();
 
-  // Retrieve the username from localStorage
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
+    if (storedUsername) setUsername(storedUsername);
   }, []);
 
-  // Fetch all books from the API
   useEffect(() => {
     const fetchBooks = async () => {
       setLoading(true);
       try {
-        const response = await fetch('https://library-management-system-pro-backend.onrender.com/all');
-        if (!response.ok) {
-          throw new Error('Failed to fetch books');
-        }
+        const response = await fetch('https://library-management-system-pro-backend.onrender.com/api/books/all');
+        if (!response.ok) throw new Error('Failed to fetch books');
         const data = await response.json();
         setBooks(data);
-        setLoading(false);
+        setFilteredBooks(data);
       } catch (error) {
         console.error(error);
         setError('Error fetching books');
+      } finally {
         setLoading(false);
       }
     };
     fetchBooks();
-  }, []); // Runs once when the component mounts
+  }, []);
 
-  // Handle the search query input change
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    // Filter books based on the search query
+    filterBooks(query, activeFilter);
+  };
+
+  const filterBooks = (query, filter) => {
+    let filtered = books;
+    
     if (query.trim() !== '') {
       const lowerQuery = query.toLowerCase();
-      const filtered = books.filter(
+      filtered = filtered.filter(
         (book) =>
           book.title.toLowerCase().includes(lowerQuery) ||
           book.isbn.includes(lowerQuery) ||
           book.author.toLowerCase().includes(lowerQuery)
       );
-      setFilteredBooks(filtered);
-    } else {
-      setFilteredBooks([]); // If search query is empty, clear the filtered results
     }
+
+    if (filter !== 'all') {
+      filtered = filtered.filter(book => book.type.toLowerCase() === filter);
+    }
+
+    setFilteredBooks(filtered);
   };
 
-  // Handle the search button click
-  const handleSearchClick = () => {
-    if (searchQuery.trim() !== '') {
-      const lowerQuery = searchQuery.toLowerCase();
-      const filtered = books.filter(
-        (book) =>
-          book.title.toLowerCase().includes(lowerQuery) ||
-          book.isbn.includes(lowerQuery) ||
-          book.author.toLowerCase().includes(lowerQuery)
-      );
-      setFilteredBooks(filtered);
-    }
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    filterBooks(searchQuery, filter);
   };
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem('username');
-    navigate('/'); // Redirect to login page
+    navigate('/');
   };
 
-  // Toggle sidebar open/close
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const handleBookClick = (isbn) => navigate(`/book-details/${isbn}`);
 
-  // Close sidebar
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
+  const quickActions = [
+    { title: 'View All Books', icon: '📚', path: '/view-book', color: 'blue' },
+    { title: 'Issued Books', icon: '📖', path: '/issued-book', color: 'green' },
+    { title: 'Favorites', icon: '⭐', path: '/favorites', color: 'yellow' },
+    { title: 'Add New Book', icon: '➕', path: '/add-book', color: 'purple' }
+  ];
 
-  // Handle book click to navigate to book details page using ISBN
-  const handleBookClick = (isbn) => {
-    navigate(`/book-details/${isbn}`);
-  };
+  const categories = ['all', 'fiction', 'science', 'history', 'biography', 'mystery'];
 
   return (
-    <div className="home-page">
-      {/* Toggle Button */}
-      <button className="toggle-btn" onClick={toggleSidebar}>
-        ☰
-      </button>
-      {/* Sidebar */}
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <button className="close-btn" onClick={closeSidebar}>
-          ✖
-        </button>
-        <h2 className="sidebar-title">Library Management</h2>
-        <ul className="sidebar-menu">
-          <li>
-            <Link to="/view-book" className="sidebar-link">
-              View Books
-            </Link>
-          </li>
-          <li>
-            <Link to="/issued-book" className="sidebar-link">
-              Issued Books
-            </Link>
-          </li>
-          <li>
-            <Link to="/favorites" className="sidebar-link">
-              View Favorites
-            </Link>
-          </li>
-        </ul>
-      </aside>
-
-      {/* Main Content */}
-      <div className="main-content">
-        <header className="header">
-          {/* Left - Toggle Button */}
-          <div className="header-left">
-            <button className="toggle-btn" onClick={toggleSidebar}>
-              ☰
-            </button>
+    <div className="homepage-container">
+      {/* Header */}
+      <header className="homepage-header">
+        <div className="header-content">
+          <div className="logo-section">
+            <h1 className="logo-title">LibraryPro</h1>
+            <span className="logo-subtitle">Management System</span>
           </div>
-          {/* Center - Search Bar */}
-          <div className="header-center">
-            <div className="search-bar">
+          
+          <div className="search-section">
+            <div className="search-container">
               <input
                 type="text"
-                placeholder="Search the books"
+                placeholder="Search books by title, author, or ISBN..."
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="search-input"
               />
-              <button className="search-btn" onClick={handleSearchClick}>
-                Search
-              </button>
-            </div>
-            {/* Display suggestions if search results exist */}
-            {searchQuery && filteredBooks.length > 0 && (
-              <div className="search-suggestions">
-                <ul>
-                  {filteredBooks.map((book) => (
-                    <li key={book._id} onClick={() => handleBookClick(book.isbn)}>
-                      <span className="suggestion-link">
-                        {book.title} by {book.author}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-          {/* Right - Username & Logout */}
-          <div className="header-right">
-            <div className="user-info">
-              <img src={profileIcon} alt="Profile" className="profile-icon" />
-              <span className="username">{username}</span>
-              <button className="logout-btn" onClick={handleLogout}>
-                Logout
+              <button className="search-button">
+                <span className="search-icon">🔍</span>
               </button>
             </div>
           </div>
-        </header>
 
-        <div className="content-area">
-          {/* Show loading or error state */}
-          {loading && <p>Loading books...</p>}
-          {error && <p>{error}</p>}
-          {/* Main content goes here */}
+          <div className="user-section">
+            <div className="user-info">
+              <img src={profileIcon || "/placeholder.svg"} alt="Profile" className="profile-image" />
+              <span className="username">{username}</span>
+            </div>
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="homepage-main">
+        {/* Welcome Section */}
+        <section className="welcome-section">
+          <div className="welcome-content">
+            <h2 className="welcome-title">Welcome back, {username}!</h2>
+            <p className="welcome-description">
+              Manage your library efficiently with our comprehensive system
+            </p>
+          </div>
+        </section>
+
+        {/* Quick Actions */}
+        <section className="quick-actions-section">
+          <h3 className="section-title">Quick Actions</h3>
+          <div className="quick-actions-grid">
+            {quickActions.map((action, index) => (
+              <div
+                key={index}
+                className={`action-card ${action.color}`}
+                onClick={() => navigate(action.path)}
+              >
+                <div className="action-icon">{action.icon}</div>
+                <h4 className="action-title">{action.title}</h4>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Books Section */}
+        <section className="books-section">
+          <div className="books-header">
+            <h3 className="section-title">Library Collection</h3>
+            <div className="filter-tabs">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  className={`filter-tab ${activeFilter === category ? 'active' : ''}`}
+                  onClick={() => handleFilterChange(category)}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {loading && (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p className="loading-text">Loading your library...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="error-container">
+              <div className="error-icon">⚠️</div>
+              <p className="error-message">{error}</p>
+              <button className="retry-button" onClick={() => window.location.reload()}>
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <div className="books-grid">
+              {filteredBooks.length > 0 ? (
+                filteredBooks.slice(0, 12).map((book) => (
+                  <div
+                    key={book._id}
+                    className="book-card"
+                    onClick={() => handleBookClick(book.isbn)}
+                  >
+                    <div className="book-image">
+                      {book.image ? (
+                        <img src={book.image || "/placeholder.svg"} alt={book.title} />
+                      ) : (
+                        <div className="book-placeholder">📖</div>
+                      )}
+                    </div>
+                    <div className="book-info">
+                      <h4 className="book-title">{book.title}</h4>
+                      <p className="book-author">by {book.author}</p>
+                      <div className="book-details">
+                        <span className="book-type">{book.type}</span>
+                        <span className="book-pages">{book.pages} pages</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-books-container">
+                  <div className="no-books-icon">📚</div>
+                  <h4 className="no-books-title">No books found</h4>
+                  <p className="no-books-message">
+                    Try adjusting your search or filter criteria
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && !error && filteredBooks.length > 12 && (
+            <div className="view-more-container">
+              <button 
+                className="view-more-button"
+                onClick={() => navigate('/view-book')}
+              >
+                View All Books ({filteredBooks.length})
+              </button>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 };

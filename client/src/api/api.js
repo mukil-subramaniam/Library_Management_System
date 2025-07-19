@@ -3,7 +3,7 @@ const BASE_URL = 'https://library-management-system-pro-backend.onrender.com/api
 // Function to log in as Admin
 export const adminLogin = async (username, password) => {
   try {
-    const response = await fetch(`${BASE_URL}/admin/login`, {
+    const response = await fetch('https://library-management-system-pro-backend.onrender.com/api/admin/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,7 +26,7 @@ export const adminLogin = async (username, password) => {
 // Function to log in as User
 export const userLogin = async (username, password) => {
   try {
-    const response = await fetch(`${BASE_URL}/user/login`, {
+    const response = await fetch('https://library-management-system-pro-backend.onrender.com/api/user/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,25 +48,27 @@ export const userLogin = async (username, password) => {
 
 // Function to sign up as User
 export const userSignup = async (username, email, name, password, phone) => {
-  try {
-    const response = await fetch(`${BASE_URL}/user/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, email, name, password, phone }),
-    });
+  try {
+    const response = await fetch('https://library-management-system-pro-backend.onrender.com/api/user/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, email, name, password, phone }),
+    });
 
-    if (!response.ok) {
-      throw new Error('User signup failed');
-    }
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Server responded with:", errText);
+      throw new Error('User signup failed');
+    }
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error during user signup:', error);
-    throw error;
-  }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error during user signup:', error);
+    throw error;
+  }
 };
 
 // Function to add a book

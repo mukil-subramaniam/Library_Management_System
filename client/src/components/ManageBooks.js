@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../styles/ManageBooks.css';
 const ManageBooks = () => {
   const [books, setBooks] = useState([]);
